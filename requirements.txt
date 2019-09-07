@@ -1,3 +1,3 @@
 Flask==1.0.2
 line-bot-sdk==1.8.
-Pya3rt==1.10
+Pya3rt==1.1
