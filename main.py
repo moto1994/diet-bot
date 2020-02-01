@@ -17,10 +17,10 @@ import sqlite3
 
 app = Flask(__name__)
 
-LINE_CHANNEL_ACCESS_TOKEN = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
-LINE_CHANNEL_SECRET = os.environ["LINE_CHANNEL_SECRET"]
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(LINE_CHANNEL_SECRET)
+#LINE_CHANNEL_ACCESS_TOKEN = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+#LINE_CHANNEL_SECRET = os.environ["LINE_CHANNEL_SECRET"]
+line_bot_api = LineBotApi('QgQu1p3zPbyLJYeg0G4yZzKU8AGaCQbkanX+MutsQPccZDNClUTqgGD7DUh8MGMI/d4N+TnZHVzPf+Jo0Ro94ErSGx/X9JwreK3pflOourtohnsZHj2I1GqZ0TXq7Lz7aPXQrPzmGgfRkRvh/XbMfwdB04t89/1O/w1cDnyilFU=')
+handler = WebhookHandler('979d7d85f9afe2034623bbfa9f9fe47b')
 f = open("./menu_list.txt","rb")
 list_row = pickle.load(f)
 
