@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup as bs
 import re
 import pickle
 import random
+import sqlite3
 
 app = Flask(__name__)
 
@@ -80,14 +81,19 @@ def handle_message(event):
     word = event.message.text
     if word in ["call"]:
         #朝と昼・夜の基礎代謝データを呼び出し
-        path_r = 'personal_data.txt'
-        with open(path_r) as tf:
-            s = tf.read()
-        morning = int(s[:3])
-        dinner = int(s[3:])
-        today_morning = make_menu(morning)
-        today_lunch = make_menu(dinner)
-        today_dinner= make_menu(dinner)
+        profile = line_bot_api.get_profile(event.source.user_id)
+        user_id = profile.user_id
+        conn = sqlite3.connect('database.sqlite3')
+        c = conn.cursor()
+        c.execute('SELECT * FROM user WHERE id=?', (user_id,))
+        list1 = c.fetchone()
+        before_noon = list1[1]
+        after_noon = list1[2]
+        conn.commit()
+        conn.close()
+        today_morning = make_menu(before_noon)
+        today_lunch = make_menu(after_noon)
+        today_dinner= make_menu(after_noon)
         today_menu = []
         for i in today_morning:
             today_menu .append( "\n朝ご飯は" + str(i))
@@ -125,13 +131,17 @@ def handle_message(event):
         sex = int(personal_data[3])
         aim_kcal = base_energy(tall, weight, age, sex)
         #各食ごとのカロリーを算出
-        before_noon = create_before(aim_kcal)
-        after_noon = create_after(aim_kcal)
-        #ファイルに書き込み
-        path_w = 'personal_data.txt'
-        with open(path_w, mode='w') as f:
-            f.write(str(before_noon))
-            f.write(str(after_noon))
+        #データベースに書き込み
+        profile = line_bot_api.get_profile(event.source.user_id)
+        prof_dict = {}
+        prof_dict["id"] = profile.user_id
+        prof_dict["before_noon"] = create_before(aim_kcal)
+        prof_dict["after_noon"] = create_after(aim_kcal)
+        conn = sqlite3.connect('database.sqlite3')
+        c = conn.cursor()
+        c.execute('insert into user(id, before_noon, after_noon) values(:id, :before_noon, :after_noon);', prof_dict)
+        conn.commit()
+        conn.close()
 
         line_bot_api.reply_message(
         event.reply_token,
