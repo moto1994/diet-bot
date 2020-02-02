@@ -3,7 +3,8 @@ from bs4 import BeautifulSoup as bs
 import re
 import pickle
 
-def scraping(url):
+#LAWSONのスクレイピング関数
+def lawson_scraping(url):
     header = {"User-Agent" : "Mozilla/5.0"}
     soup = bs(requests.get(url, headers=header).content, 'html.parser')
 
@@ -19,13 +20,10 @@ def scraping(url):
 
     #画像        
     images = []
-    for i in soup.find_all('div', class_='media-content'):
-        for j in i.find_all("img"):
-            images.append(j.get("src"))
-
-    pics = []        
-    for i in images:
-        pics.append("http://www.lawson.co.jp" + i)
+    for i in soup.find_all('div', class_='box lw-no-shadow'):
+        j = i.a.get("href")
+        images.append("http://www.lawson.co.jp" + j)
+            
             
     #カロリー
     kcals = []
@@ -38,21 +36,50 @@ def scraping(url):
             kcals.append(j)
     
     #リストデータ作成
-    return list(zip(kcals, names, pics))
+    return list(zip(kcals, names, images))
+
+#セブンのスクレイピング関数
+def seven_scraping(url):
+    header = {"User-Agent" : "Mozilla/5.0"}
+    s = bs(requests.get(url, headers=header).content, 'html.parser')
+    
+    #名前
+    s_names = []
+    for i in s.find_all('div', class_='itemName'):
+        s_names.append(i.text)
+
+    #画像        
+    s_images = []
+    for i in s.find_all('div', class_='image'):
+        j = i.a.get("href")
+        s_images.append("https://www.sej.co.jp"+j)
+
+    #カロリー
+    s_kcals = []
+    for i in s.find_all('div', class_='summary'):
+        j = i.find('li', class_ ='n1')
+        j = j.text
+        j = j.strip("※地域によりカロリーが異なる場合があります。")
+        j = j.split("kcal")[0]
+        j = int(j)
+        s_kcals.append(j)
+
+    return list(zip(s_kcals, s_names, s_images))
+
 
 def main():
-    bento = scraping("http://www.lawson.co.jp/recommend/original/bento/index.html")
-    rice = scraping("http://www.lawson.co.jp/recommend/original/rice/index.html")
-    sushi = scraping("http://www.lawson.co.jp/recommend/original/sushi/index.html")
-    chilled = scraping("http://www.lawson.co.jp/recommend/original/chilledbento/index.html")
-    sandwich = scraping("http://www.lawson.co.jp/recommend/original/sandwich/index.html")
-    pasta = scraping("http://www.lawson.co.jp/recommend/original/pasta/index.html")
-    noodle = scraping("http://www.lawson.co.jp/recommend/original/noodle/index.html")
-    soup = scraping("http://www.lawson.co.jp/recommend/original/soup/index.html")
-    chukaman = scraping("http://www.lawson.co.jp/recommend/original/chukaman/index.html")
-    gratin = scraping("http://www.lawson.co.jp/recommend/original/gratin/index.html")
-    cupnoodle = scraping("https://www.lawson.co.jp/recommend/original/select/cupnoodle/index.html")
-    salad = scraping("http://www.lawson.co.jp/recommend/original/salad/index.html")
+    bento = lawson_scraping("http://www.lawson.co.jp/recommend/original/bento/index.html")
+    rice = lawson_scraping("http://www.lawson.co.jp/recommend/original/rice/index.html")
+    sushi = lawson_scraping("http://www.lawson.co.jp/recommend/original/sushi/index.html")
+    chilled = lawson_scraping("http://www.lawson.co.jp/recommend/original/chilledbento/index.html")
+    sandwich = lawson_scraping("http://www.lawson.co.jp/recommend/original/sandwich/index.html")
+    pasta = lawson_scraping("http://www.lawson.co.jp/recommend/original/pasta/index.html")
+    noodle = lawson_scraping("http://www.lawson.co.jp/recommend/original/noodle/index.html")
+    soup = lawson_scraping("http://www.lawson.co.jp/recommend/original/soup/index.html")
+    chukaman = lawson_scraping("http://www.lawson.co.jp/recommend/original/chukaman/index.html")
+    gratin = lawson_scraping("http://www.lawson.co.jp/recommend/original/gratin/index.html")
+    cupnoodle = lawson_scraping("https://www.lawson.co.jp/recommend/original/select/cupnoodle/index.html")
+    salad = lawson_scraping("http://www.lawson.co.jp/recommend/original/salad/index.html")
     #ドレッシングを排除
     only_saldas = []
     for i in salad:
@@ -63,10 +90,16 @@ def main():
 
     lawson_list = bento + rice + sushi + chilled + sandwich +  pasta + noodle + soup + chukaman + only_saldas + gratin + cupnoodle
 
-    f = open('menu_list.txt', 'wb')
+    f = open('lawson_list.txt', 'wb')
     list_row = lawson_list
-    return pickle.dump(list_row, f)
+    pickle.dump(list_row, f)
 
+    seven_url ="https://www.sej.co.jp/i/products/anshin/calorie/"
+    seven_list = seven_scraping(seven_url)
+
+    f = open('seven_list.txt', 'wb')
+    list_row02 = seven_list
+    pickle.dump(list_row02, f)
 
 
 

@@ -21,8 +21,10 @@ LINE_CHANNEL_ACCESS_TOKEN = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
 LINE_CHANNEL_SECRET = os.environ["LINE_CHANNEL_SECRET"]
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
-f = open("./menu_list.txt","rb")
+f = open("./lawson_list.txt","rb")
 list_row = pickle.load(f)
+f02 = open("./seven_list.txt","rb")
+list_row02 = pickle.load(f02)
 
 #基礎代謝を計算する関数
 def base_energy(tall, weight, age, sex):
@@ -42,15 +44,16 @@ def create_after(aim_kcal):
     return int(aim_kcal * 0.4)
 
 #メニューをランダムに選ぶ関数
-def make_menu(aim_num):
+def make_menu(aim_num, conv_list):
     menu = []
     x = 0
-    for i in range(100):
-        i = random.choice(list_row)
-        if aim_num -100 <= x <= aim_num + 50:
+    #目標カロリーのプラマイ100kcalになるまでループ
+    for i in range(150):
+        i = random.choice(conv_list)
+        if aim_num -100 <= x <= aim_num + 100:
             return menu
             break
-        if i[0] + x <= aim_num + 50:
+        if i[0] + x <= aim_num + 100:
             x += i[0]
             menu.append(i)
         else:
@@ -80,7 +83,7 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     word = event.message.text
-    if word in ["call"]:
+    if word in ["ローソン"]:
         #朝と昼・夜の基礎代謝データを呼び出し
         profile = line_bot_api.get_profile(event.source.user_id)
         user_id = profile.user_id
@@ -92,9 +95,9 @@ def handle_message(event):
         after_noon = list1[2]
         conn.commit()
         conn.close()
-        today_morning = make_menu(before_noon)
-        today_lunch = make_menu(after_noon)
-        today_dinner= make_menu(after_noon)
+        today_morning = make_menu(before_noon, list_row)
+        today_lunch = make_menu(after_noon, list_row)
+        today_dinner= make_menu(after_noon, list_row)
         today_menu = []
         for i in today_morning:
             today_menu .append( "\n朝ご飯は" + str(i))
@@ -108,22 +111,50 @@ def handle_message(event):
         event.reply_token,
         TextSendMessage(text=reply))
 
-    elif word in ["status"]:
+    elif word in ["セブン"]:
+        #朝と昼・夜の基礎代謝データを呼び出し
+        profile = line_bot_api.get_profile(event.source.user_id)
+        user_id = profile.user_id
+        conn = sqlite3.connect('database.sqlite3')
+        c = conn.cursor()
+        c.execute('SELECT * FROM user WHERE id=?', (user_id,))
+        list1 = c.fetchone()
+        before_noon = list1[1]
+        after_noon = list1[2]
+        conn.commit()
+        conn.close()
+        today_morning = make_menu(before_noon, list_row02)
+        today_lunch = make_menu(after_noon, list_row02)
+        today_dinner= make_menu(after_noon, list_row02)
+        today_menu = []
+        for i in today_morning:
+            today_menu .append( "\n朝ご飯は" + str(i))
+        for i in today_lunch:
+            today_menu.append("\n昼ご飯は" + str(i))
+        for i in today_dinner:
+            today_menu.append("\n夜ご飯は" + str(i))
+        reply = ','.join(today_menu)
+
+        line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=reply))
+
+    elif word in ["設定"]:
         setup_text = """以下のフォーマットで入力してください\
         
-        set:身長-体重-年齢-性別（１男性　or　2女性）
+        登録。身長-体重-年齢-性別（１男性　or　2女性）
         ＊全て半角数字をご使用してください
-        ＊例　　　　set:168-68-24-1
+        ＊例　　　　登録。168-68-24-1
         """
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=setup_text))
 
-    elif 0 <= word.find('set:') :
+    elif 0 <= word.find('登録。') :
         #受けとったデータを身長、体重、年齢、性別に分ける
         #それをbase_energyに渡す
         personal_data = event.message.text
-        personal_data = personal_data.replace("set:", "")
+        personal_data = personal_data.replace("登録。", "")
         personal_data = personal_data.replace("-", ",")
         personal_data = personal_data.split(',')
         tall = int(personal_data[0])
@@ -146,12 +177,12 @@ def handle_message(event):
 
         line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="設定変更は完了したよ"))
+        TextSendMessage(text="設定は完了したよ"))
 
     else:
         line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="callかstatusと入力してください"))
+        TextSendMessage(text="ローソンかセブンか設定と入力してください"))
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
